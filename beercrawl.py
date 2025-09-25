@@ -1,8 +1,7 @@
 import json
 import pandas as pd
-import matplotlib
-import matplotlib.pyplot as plt
-matplotlib.use("TkAgg")
+import analyse  # Ensure analyse.py is in the same directory or installed as a module
+
 
 def clean_numeric_columns(df, numeric_cols):
     """
@@ -32,30 +31,21 @@ numeric_fields = ["rating_score", "beer_abv", "beer_ibu",
 df = clean_numeric_columns(df, numeric_fields)
 df["created_at"] = pd.to_datetime(df["created_at"], errors="coerce")
 
-# --- Example filtering ---
-# Keep only beers with rating >= 4
-filtered = df[df["rating_score"] >= 4]
+# Filter unique beers by Untappd beer ID
+df = df.drop_duplicates(subset=["bid"], keep="first")
 
-# --- Example aggregation ---
-# Average rating per beer type
-avg_ratings = filtered.groupby("beer_type")["rating_score"].mean().sort_values(ascending=False)
+# 1. Define date range
+start = pd.Timestamp("2023-09-06")   # Sep 2023
+end   = pd.Timestamp("2025-05-24")   # May 2025
+# 2. Filter by date range
+filtered = df[(df["created_at"] >= start) & (df["created_at"] <= end)]
 
-# --- Plotting ---
-plt.figure(figsize=(10,6))
-avg_ratings.plot(kind="bar")
-plt.title("Average Ratings of Beers (rating >= 4)")
-plt.xlabel("Beer Type")
-plt.ylabel("Average Rating")
-plt.xticks(rotation=45, ha="right")
-plt.tight_layout()
-plt.show()
 
-# Count check-ins per month
-checkins_per_month = df.groupby(df["created_at"].dt.to_period("M")).size()
+# print(filtered[["beer_name", "created_at"]].tail())
+print(filtered.shape[0])
 
-checkins_per_month.plot(kind="bar", figsize=(10,5))
-plt.title("Check-ins per Month")
-plt.xlabel("Month")
-plt.ylabel("Number of Check-ins")
-plt.tight_layout()
-plt.show()
+analyse.country_checkin_count(df)
+
+analyse.beer_style_count(df)
+analyse.beer_style_avg_rating(df)
+analyse.country_avg_rating(df)
